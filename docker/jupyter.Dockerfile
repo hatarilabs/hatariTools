@@ -1,6 +1,6 @@
 FROM jupyter/base-notebook:python-3.11
-LABEL maintainer="mf6Voronoi Developers"
-LABEL repo="https://github.com/hatarilabs/mf6Voronoi"
+LABEL maintainer="hatariTools Developers"
+LABEL repo="https://github.com/hatarilabs/hatariTools"
 
 COPY docker/requirements.txt /build-context/requirements.txt
 WORKDIR /build-context/

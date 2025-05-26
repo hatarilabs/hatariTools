@@ -3,9 +3,9 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mf6Voronoi"
-version = "0.0.27"
-description = "Voronoi mesh generator for MODFLOW6 Disv models"
+name = "hatariTools"
+version = "0.0.01"
+description = "The Hatari repository for a bunch of Python tools in water resources."
 authors = [
     {name = "Saul Montoya", email = "saulmontoya@hatarilabs.com"}
 ]
@@ -28,9 +28,9 @@ dependencies = [
 readme = "README.md"
 
 [tool.setuptools]
-packages = ["mf6Voronoi","mf6Voronoi.tools"]
+packages = ["hatariTools","hatariTools.model"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"mf6Voronoi" = ["examples/notebooks/*.ipynb","examples/json/*.json"]
+"hatariTools" = ["examples/notebooks/*.ipynb","examples/json/*.json"]
 

@@ -2,8 +2,8 @@
 version: '3.8'
 
 services:
-  mf6voronoi:
-    image: mf6voronoi-jupyterlab:latest  
+  hatariTools:
+    image: hatariTools-jupyterlab:latest  
     ports:
       - "8888:8888"
     volumes:

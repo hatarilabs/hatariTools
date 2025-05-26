@@ -1,9 +1,9 @@
 #List required packages
-pip list | grep mf6Voronoi
+pip list | grep hatariTools
 
 #Uninstall package
-pip uninstall mf6Voronoi --break-system-packages
-sudo apt remove python3-mf6voronoi
+pip uninstall hatariTools --break-system-packages
+sudo apt remove python3-hatariTools
 
 #Install package locally
 pip install -e .

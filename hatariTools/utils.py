@@ -297,7 +297,7 @@ def listTemplates():
     with open(jsonPath, 'r') as file:
         templateDict = json.load(file)
 
-    print("/-------- List of available mf6Voronoi templates --------/\n")
+    print("/-------- List of available hatariTools templates --------/\n")
 
     for key in templateDict.keys():
         print("Nr %d: %s"%(templateDict[key]["index"],key))
