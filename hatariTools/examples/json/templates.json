@@ -1,8 +1,8 @@
 {
-    "generateVoronoi": {
+    "phreeqcModel": {
         "index": 1,
-        "template": "p1_generateVoronoi.ipynb",
-        "desc": "Template for Voronoi mesh generation"
+        "template": "p1_phreeqcModel.ipynb",
+        "desc": "Template for Phreeqc modeling with Python"
     },
     "modelCreation": {
         "index": 2,
