@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hatariTools"
-version = "0.0.02"
+version = "0.0.04"
 description = "The Hatari repository for a bunch of Python tools in water resources."
 authors = [
     {name = "Saul Montoya", email = "saulmontoya@hatarilabs.com"}
 ]
 keywords = ["MODFLOW", "groundwater", "hydrogeology"]
-license = {text = "CC0"}
+license = "MIT"
 requires-python = ">=3.9"
 dependencies = [
     "fiona >= 1.9.6",
@@ -31,7 +31,7 @@ dependencies = [
 readme = "README.md"
 
 [tool.setuptools]
-packages = ["hatariTools","hatariTools.modelEngines"]
+packages = ["hatariTools","hatariTools.modelEngines","hatariTools.geospatialIA","hatariTools.geospatialTools"]
 include-package-data = true
 
 [tool.setuptools.package-data]

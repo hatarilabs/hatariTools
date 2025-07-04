@@ -7,11 +7,17 @@ import matplotlib.pyplot as plt
 import fiona
 import rasterio
 from rasterio.plot import show
-from skimage.feature import match_template
+import geopandas as gpd
+from shapely.geometry import Polygon, Point
 
+from skimage.feature import match_template
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.feature import match_template
-from sklearn.cluster import Birch, DBSCAN
+from sklearn.cluster import Birch
+
+from hatariTools.utils import (isRunningInJupyter, 
+                    printBannerHtml, 
+                    printBannerText)
     
 class cropCounting():
     def __init__(self):
@@ -21,12 +27,23 @@ class cropCounting():
         self.surveyRowCol = []
         self.selectedBand = ''
         self.matchXYList = []
+
+        #insert banner
+        if isRunningInJupyter():
+            printBannerHtml()
+        else:
+            printBannerText()
+
+        print('\n/-------------------------------------------/')
+        print('\nThe crop recognition engine has been started')
+        print('\n/-------------------------------------------/')
         
+
     def defineRaster(self, rasterPath):
         #open raster file
         cropRaster = rasterio.open(rasterPath)
-        
-        print('CRS of Raster Data: ' + str(cropRaster.crs))
+        print('\n/-------------------------------------------/')
+        print('\nCRS of Raster Data: ' + str(cropRaster.crs))
         print('Number of Raster Bands: ' + str(cropRaster.count))
         print('Interpretation of Raster Bands: ' + str(cropRaster.colorinterp))
         self.cropRaster = cropRaster
@@ -38,18 +55,26 @@ class cropCounting():
         #explore the raster units and resolution
         units = cropRaster.crs.linear_units
         res = cropRaster.res[0]
-        print("Raster unit is %s and resolution is %.2f"%(units,res))
-
+        print("Raster unit is %s and resolution is %.2f \n"%(units,res))
+        print('/-------------------------------------------/\n')
         self.rasterRes = res
 
+        bounds = cropRaster.bounds
+        self.boundPoly = Polygon([(bounds.left, bounds.top),
+                                (bounds.left, bounds.bottom),
+                                (bounds.right, bounds.bottom),
+                                (bounds.right, bounds.top)])
         
     def definePoints(self, pointPath):
-        pointData = fiona.open(pointPath)
-        print('CRS of Point Data: ' + str(pointData.crs['init']))
-        self.pointData = pointData
-        xList = [item['geometry']['coordinates'][0] for item in pointData]
-        yList = [item['geometry']['coordinates'][1] for item in pointData]
-        self.pointCoords = list(zip(xList,yList))
+        pointDf = gpd.read_file(pointPath)
+        print('\n CRS of Point Data:' + str(pointDf.crs))
+        if self.cropRaster.crs.to_epsg() == pointDf.crs.to_epsg():
+            xList = pointDf.geometry.x.to_list()
+            yList = pointDf.geometry.y.to_list()
+            self.pointCoords = list(zip(xList,yList))
+            self.pointDf = pointDf
+        else:
+            print("[ERROR] The coordinate reference system of the raster and points don't match")
         
     def plotRasterandPoints(self):
         coordList = [item['geometry']['coordinates'] for item in self.pointData]
@@ -62,7 +87,6 @@ class cropCounting():
         show(self.cropRaster, ax=ax)
         #return fig
         
-    
     def getPointRowCol(self):
         self.surveyRowCol = []
         for index, point in enumerate(self.pointCoords):
@@ -103,19 +127,10 @@ class cropCounting():
         outRaster.close()
         return matchTemplate
         
-    def singleMatchHistogram(self, item):
+    def singleMatchHistogram(self, item, interval=None):
         templateArray = self.surveyRowCol[item]['array']
         matchTemplate = match_template(self.selectedBand, templateArray,
                                        pad_input=True)
-        #matchTemplate[matchTemplate<0] = 0
-        # Compute histogram with 5 bins
-        #counts, bin_edges = np.histogram(matchTemplate, bins=5)
-        # plt.hist(matchTemplate, bins=10, edgecolor='black')
-        # plt.title("Histogram")
-        # plt.xlabel("Value")
-        # plt.ylabel("Frequency")
-        # plt.show()
-        # Optional: set a Seaborn style
         sns.set(style="whitegrid", palette="muted", font_scale=1.2)
 
         # Create histogram
@@ -126,6 +141,9 @@ class cropCounting():
         plt.title("Histogram")
         plt.xlabel("Match Value")
         plt.ylabel("Frequency")
+        
+        if interval:
+            plt.xlim(interval[0],interval[1])
 
         # Show plot
         plt.show()
@@ -149,7 +167,7 @@ class cropCounting():
                 
             for item in zip(templateFiltered[0],templateFiltered[1]):
                 x, y = self.cropRaster.xy(item[0], item[1])
-                self.matchXYList.append([x,y])
+                self.matchXYList.append((x,y))
         #return self.matchXYList
 
         
@@ -183,13 +201,21 @@ class cropCounting():
         show(self.cropRaster, ax=ax)
         plt.show()
 
-
-        
     def birchFilter(self):
         threshold=self.cropRaster.res[0]*self.pointRatio
         brc = Birch(branching_factor=10000, n_clusters=None, 
                     threshold=threshold, compute_labels=True)
-        matchXYArray = np.array(self.matchXYList)
+        matchXYSet = list(set(self.matchXYList))
+        
+        buffPoly = self.boundPoly.buffer(-self.pointRatio*self.rasterRes)
+        matchXYBuff = []
+        for match in matchXYSet:
+            matchPoint = Point(match)
+            if matchPoint.intersects(buffPoly):
+                matchXYBuff.append(match)
+
+        matchXYArray = np.array(matchXYBuff)
+
         brc.fit(matchXYArray)
         self.birchPoint = brc.subcluster_centers_
         
@@ -212,6 +238,11 @@ class cropCounting():
         fig = plt.figure(figsize=(20, 20))
         ax = fig.add_subplot(111)
         ax.scatter(self.birchPoint[:,[0]],self.birchPoint[:,[1]],
-                   marker='o',color='orangered',s=100)
+                   marker='o',color='crimson', edgecolors='white',
+                   s=100, label='Recognized Crops', alpha=0.7)
+        ax.scatter(self.pointDf.geometry.x, self.pointDf.geometry.y,
+                    marker='o',color='teal', edgecolors='white',
+                    s=100, label='Sample Crops')
         show(self.cropRaster, ax=ax)
+        ax.legend()
         plt.show()
